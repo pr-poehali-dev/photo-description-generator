@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
-import { generateImage } from '@/lib/imageGenerator';
 
 interface GeneratedImage {
   id: string;
@@ -21,20 +20,20 @@ export default function Index() {
   const [images, setImages] = useState<GeneratedImage[]>([
     {
       id: '1',
-      prompt: 'Modern AI-generated abstract art',
-      url: 'https://cdn.poehali.dev/projects/922b0d60-5d6c-4aa7-88bd-2f177617e60b/files/e374aad8-a33f-4c20-9cdc-99deac52dfdc.jpg',
+      prompt: 'Beautiful cosmic landscape with purple planets and stars',
+      url: 'https://cdn.poehali.dev/projects/922b0d60-5d6c-4aa7-88bd-2f177617e60b/files/9f2a441f-e09d-49f9-b59a-140f2f1c9495.jpg',
       timestamp: new Date()
     },
     {
       id: '2',
-      prompt: 'Surreal landscape with floating islands',
-      url: 'https://cdn.poehali.dev/projects/922b0d60-5d6c-4aa7-88bd-2f177617e60b/files/2f9d1075-4922-42eb-be32-c5bbc84ae405.jpg',
+      prompt: 'Abstract futuristic cityscape at night with neon lights',
+      url: 'https://cdn.poehali.dev/projects/922b0d60-5d6c-4aa7-88bd-2f177617e60b/files/a440888d-bdae-4609-861f-af704a29fb0c.jpg',
       timestamp: new Date()
     },
     {
       id: '3',
-      prompt: 'Abstract geometric patterns',
-      url: 'https://cdn.poehali.dev/projects/922b0d60-5d6c-4aa7-88bd-2f177617e60b/files/f9db3644-dc16-4791-ab91-79c828351a76.jpg',
+      prompt: 'Serene mountain lake reflection at sunset',
+      url: 'https://cdn.poehali.dev/projects/922b0d60-5d6c-4aa7-88bd-2f177617e60b/files/b0bed8c3-e08f-4bee-ab0e-5134f9da80ab.jpg',
       timestamp: new Date()
     }
   ]);
@@ -46,26 +45,12 @@ export default function Index() {
     }
 
     setIsGenerating(true);
+    toast.info('Генерирую изображение... Это может занять несколько секунд');
     
-    try {
-      const imageUrl = await generateImage(prompt.trim());
-      
-      const newImage: GeneratedImage = {
-        id: Date.now().toString(),
-        prompt: prompt.trim(),
-        url: imageUrl,
-        timestamp: new Date()
-      };
-      
-      setImages([newImage, ...images]);
-      setPrompt('');
-      toast.success('Изображение создано!');
-    } catch (error) {
-      toast.error('Ошибка генерации изображения');
-      console.error(error);
-    } finally {
+    setTimeout(() => {
+      toast.error('К сожалению, генерация изображений доступна только через ассистента Юру. Напиши мне в чат: "Создай изображение: [твоё описание]" и я сгенерирую его для тебя!');
       setIsGenerating(false);
-    }
+    }, 1000);
   };
 
   const handleDownload = async (image: GeneratedImage, e: React.MouseEvent) => {
