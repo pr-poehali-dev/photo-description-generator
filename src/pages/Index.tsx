@@ -45,12 +45,41 @@ export default function Index() {
     }
 
     setIsGenerating(true);
-    toast.info('Генерирую изображение... Это может занять несколько секунд');
+    toast.info('Генерация началась... Это может занять 10-30 секунд');
     
-    setTimeout(() => {
-      toast.error('К сожалению, генерация изображений доступна только через ассистента Юру. Напиши мне в чат: "Создай изображение: [твоё описание]" и я сгенерирую его для тебя!');
+    try {
+      const response = await fetch('https://functions.poehali.dev/8f6a647f-8263-4634-886d-d420930fe4a0', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка генерации');
+      }
+
+      const data = await response.json();
+      
+      const newImage: GeneratedImage = {
+        id: Date.now().toString(),
+        prompt: prompt.trim(),
+        url: data.imageUrl,
+        timestamp: new Date()
+      };
+      
+      setImages([newImage, ...images]);
+      setPrompt('');
+      toast.success('Изображение создано!');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Ошибка генерации изображения';
+      toast.error(message);
+      console.error(error);
+    } finally {
       setIsGenerating(false);
-    }, 1000);
+    }
   };
 
   const handleDownload = async (image: GeneratedImage, e: React.MouseEvent) => {
