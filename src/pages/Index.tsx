@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
@@ -15,6 +16,7 @@ interface GeneratedImage {
 export default function Index() {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [images, setImages] = useState<GeneratedImage[]>([
     {
       id: '1',
@@ -45,12 +47,24 @@ export default function Index() {
     setIsGenerating(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch('https://functions.poehali.dev/8f6a647f-8263-4634-886d-d420930fe4a0', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка генерации');
+      }
+
+      const data = await response.json();
       
       const newImage: GeneratedImage = {
         id: Date.now().toString(),
-        prompt: prompt,
-        url: 'https://cdn.poehali.dev/projects/922b0d60-5d6c-4aa7-88bd-2f177617e60b/files/e374aad8-a33f-4c20-9cdc-99deac52dfdc.jpg',
+        prompt: prompt.trim(),
+        url: data.imageUrl,
         timestamp: new Date()
       };
       
@@ -58,9 +72,30 @@ export default function Index() {
       setPrompt('');
       toast.success('Изображение создано!');
     } catch (error) {
-      toast.error('Ошибка генерации');
+      toast.error('Ошибка генерации изображения');
+      console.error(error);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleDownload = async (image: GeneratedImage, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      const response = await fetch(image.url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ai-image-${image.id}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Изображение скачано!');
+    } catch (error) {
+      toast.error('Ошибка скачивания');
     }
   };
 
@@ -138,8 +173,9 @@ export default function Index() {
               {images.map((image, index) => (
                 <Card
                   key={image.id}
-                  className="group overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 animate-fade-in"
+                  className="group overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 animate-fade-in cursor-pointer"
                   style={{ animationDelay: `${index * 100}ms` }}
+                  onClick={() => setSelectedImage(image)}
                 >
                   <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
                     <img
@@ -147,7 +183,29 @@ export default function Index() {
                       alt={image.prompt}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedImage(image);
+                          }}
+                        >
+                          <Icon name="Maximize2" size={20} />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white"
+                          onClick={(e) => handleDownload(image, e)}
+                        >
+                          <Icon name="Download" size={20} />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                   <div className="p-4">
                     <p className="text-sm text-muted-foreground line-clamp-2 group-hover:text-foreground transition-colors">
@@ -164,6 +222,42 @@ export default function Index() {
           )}
         </div>
       </div>
+
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-5xl p-0 overflow-hidden">
+          <DialogTitle className="sr-only">Просмотр изображения</DialogTitle>
+          {selectedImage && (
+            <div className="relative">
+              <img
+                src={selectedImage.url}
+                alt={selectedImage.prompt}
+                className="w-full h-auto max-h-[85vh] object-contain"
+              />
+              <div className="absolute top-4 right-4 flex gap-2">
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="bg-white/90 hover:bg-white"
+                  onClick={(e) => handleDownload(selectedImage, e)}
+                >
+                  <Icon name="Download" size={20} />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="bg-white/90 hover:bg-white"
+                  onClick={() => setSelectedImage(null)}
+                >
+                  <Icon name="X" size={20} />
+                </Button>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                <p className="text-white text-lg font-medium">{selectedImage.prompt}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="fixed bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-secondary to-accent" />
     </div>
