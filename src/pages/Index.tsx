@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
+import { generateImage } from '@/lib/imageGenerator';
 
 interface GeneratedImage {
   id: string;
@@ -47,24 +48,12 @@ export default function Index() {
     setIsGenerating(true);
     
     try {
-      const response = await fetch('https://functions.poehali.dev/8f6a647f-8263-4634-886d-d420930fe4a0', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: prompt.trim() }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Ошибка генерации');
-      }
-
-      const data = await response.json();
+      const imageUrl = await generateImage(prompt.trim());
       
       const newImage: GeneratedImage = {
         id: Date.now().toString(),
         prompt: prompt.trim(),
-        url: data.imageUrl,
+        url: imageUrl,
         timestamp: new Date()
       };
       
